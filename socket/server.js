@@ -39,6 +39,8 @@ serialport.on("open", function () {
   };
   xbeeAPI.builder.write(frame_obj);
 
+
+
   frame_obj = {
     type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
     destination64: "00 13 A2 00 41 A7 29 56",
@@ -69,7 +71,7 @@ xbeeAPI.parser.on("data", function (frame) {
   }
 
   if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
-     let dataReceived = String.fromCharCode.apply(null, frame.nodeIdentifier);
+    let dataReceived = String.fromCharCode.apply(null, frame.nodeIdentifier);
     console.log("NODE_IDENTIFICATION");
     storage.registerSensor(frame.remote64)
 
@@ -77,8 +79,28 @@ xbeeAPI.parser.on("data", function (frame) {
 
     console.log("ZIGBEE_IO_DATA_SAMPLE_RX")
     console.log(frame.digitalSamples.DIO1)
-    
-    storage.registerSample(frame.remote64,frame.digitalSamples.DIO1 )
+    var etat = frame.digitalSamples.DIO1
+    storage.registerSample(frame.remote64, frame.digitalSamples.DIO1)
+    if (etat === 1) {
+      console.log("Bouton appuyé")
+
+      frame_obj = { // AT Request to be sent
+        type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
+        destination16: frame.remote16,
+        command: "D0",
+        commandParameter: [05],
+      };
+      xbeeAPI.builder.write(frame_obj);
+    } else {
+      console.log("Bouton relaché")
+      frame_obj = { // AT Request to be sent
+        type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
+        destination16: frame.remote16,
+        command: "D0",
+        commandParameter: [00],
+      };
+      xbeeAPI.builder.write(frame_obj);
+    }
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
     console.log("REMOTE_COMMAND_RESPONSE")
